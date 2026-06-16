@@ -45,10 +45,10 @@ TM1_PATTERNS = [
     (r"Popen\s*\([^)]*shell\s*=\s*True", 0.8),
     # Dangerous flags — \b prevents matching rm/del inside words like firmware, format
     (r"\b(?:rm|del|erase)\s+[^|]*-(?:r|rf|fr)\s+[/~]", 0.9),
-    (r"--force\s+(?:delete|remove|push|reset|clean)", 0.7),
-    (r"--no-?(?:verify|check|validate|confirm|protect|safe)", 0.75),
-    (r"--skip-?(?:validation|verification|checks?|auth|tests?)", 0.7),
-    (r"--allow-?(?:empty|root|unrelated|unsafe)", 0.65),
+    (r"--force\s+(?:delete|remove|push|reset|clean)", 0.8),
+    (r"--no-?(?:verify|check|validate|confirm|protect|safe)", 0.8),
+    (r"--skip-?(?:validation|verification|checks?|auth|tests?)", 0.8),
+    (r"--allow-?(?:empty|root|unrelated|unsafe)", 0.7),
     # Dangerous globs and wildcards in destructive commands
     # \b prevents matching substrings (e.g. "firmware", "format", "performance")
     # [^)\n]{0,80} bounds the span to avoid matching across long prose to a stray "/"
@@ -59,9 +59,9 @@ TM1_PATTERNS = [
     (r"git\s+reset\s+--hard", 0.65),
     (r"git\s+clean\s+-[fd]+x", 0.7),
     # Curl/wget with unsafe parameters
-    (r"curl\s+[^|]*-k\b", 0.6),
-    (r"curl\s+[^|]*--insecure\b", 0.65),
-    (r"wget\s+[^|]*--no-check-certificate", 0.65),
+    (r"curl\s+[^|]*-k\b", 0.7),
+    (r"curl\s+[^|]*--insecure\b", 0.7),
+    (r"wget\s+[^|]*--no-check-certificate", 0.7),
     # File deletion commands (delete/remove) with explicit path argument
     # Separate from rm pattern: requires \b and a short span to a "/" to avoid
     # matching HTTP verb DELETE in REST docs or "remove" in prose
@@ -113,42 +113,34 @@ TM2_PATTERNS = [
 # TM3: Unsafe Defaults — overly permissive default settings
 TM3_PATTERNS = [
     # TLS/SSL verification disabled
-    (r"verify\s*=\s*False", 0.75),
-    (r"VERIFY_SSL\s*=\s*False", 0.8),
-    (r"(?:ssl|tls)[_.]?verify\s*=\s*(?:False|false|0|off|no|disable)", 0.8),
-    (r"(?:REQUESTS_CA_BUNDLE|CURL_CA_BUNDLE)\s*=\s*['\"]['\"]", 0.75),
-    (r"NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\"]?0['\"]?", 0.8),
+    (r"verify\s*=\s*False", 0.85),
+    (r"VERIFY_SSL\s*=\s*False", 0.85),
+    (r"(?:ssl|tls)[_.]?verify\s*=\s*(?:False|false|0|off|no|disable)", 0.85),
+    (r"(?:REQUESTS_CA_BUNDLE|CURL_CA_BUNDLE)\s*=\s*['\"]['\"]", 0.8),
+    (r"NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\"]?0['\"]?", 0.85),
     # Authentication disabled
-    (r"(?:auth|authentication|authorization)\s*=\s*(?:None|False|false|disabled?|off|no)", 0.75),
-    (r"(?:require[_-]?auth|auth[_-]?required|check[_-]?auth)\s*=\s*(?:False|false|0|no|off)", 0.8),
-    (r"(?:allow[_-]?anonymous|anonymous[_-]?access)\s*=\s*(?:True|true|1|yes|on)", 0.75),
+    (r"(?:auth|authentication|authorization)\s*=\s*(?:None|False|false|disabled?|off|no)", 0.8),
+    (r"(?:require[_-]?auth|auth[_-]?required|check[_-]?auth)\s*=\s*(?:False|false|0|no|off)", 0.85),
+    (r"(?:allow[_-]?anonymous|anonymous[_-]?access)\s*=\s*(?:True|true|1|yes|on)", 0.8),
     # Overly permissive CORS / access
-    (r"(?:CORS|cors)[^=]*=\s*['\"]?\*['\"]?", 0.65),
-    (r"(?:allow|access)[_-]?(?:origin|hosts?)\s*=\s*['\"]?\*['\"]?", 0.7),
-    (r"(?:allow|trust)\s+(?:all|any|every)\s+(?:origins?|hosts?|domains?|ips?)", 0.7),
+    (r"(?:CORS|cors)[^=]*=\s*['\"]?\*['\"]?", 0.7),
+    (r"(?:allow|access)[_-]?(?:origin|hosts?)\s*=\s*['\"]?\*['\"]?", 0.75),
     # Unsafe permissions
-    (r"(?:mode|permission|umask)\s*=\s*(?:0?o?777|0?o?666)", 0.8),
-    (r"world[_-]?(?:readable|writable|executable)", 0.7),
+    (r"(?:mode|permission|umask)\s*=\s*(?:0?o?777|0?o?666)", 0.85),
+    (r"world[_-]?(?:readable|writable|executable)", 0.75),
     # Debug/dev mode in production
-    (r"(?:debug|dev|development)[_-]?mode\s*=\s*(?:True|true|1|on|yes|enable)", 0.6),
+    (r"(?:debug|dev|development)[_-]?mode\s*=\s*(?:True|true|1|on|yes|enable)", 0.7),
     (
         r"(?:FLASK_ENV|NODE_ENV|RAILS_ENV|DJANGO_DEBUG)\s*=\s*['\"]?(?:development|debug|true|1)['\"]?",
-        0.6,
+        0.7,
     ),
     # Disable security features
     (
         r"(?:disable|skip|ignore|bypass)[_-]?(?:security|auth|validation|sanitization|encoding|escaping)",
-        0.8,
+        0.85,
     ),
-    (r"(?:safe[_-]?mode|secure[_-]?mode|sandbox)\s*=\s*(?:False|false|0|off|no|disable)", 0.8),
-    # Natural language unsafe defaults
-    (r"(?:by\s+default|default\s+to)\s+(?:allow|accept|trust)\s+(?:all|any|everything)", 0.7),
-    (
-        r"(?:trust|accept|allow)\s+(?:all|any)\s+(?:input|connections?|certificates?|origins?)\s+(?:by\s+default)",
-        0.7,
-    ),
+    (r"(?:safe[_-]?mode|secure[_-]?mode|sandbox)\s*=\s*(?:False|false|0|off|no|disable)", 0.85),
 ]
-
 
 _SAFE_CONTAINER_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"docker\s+run\s+.*--rm", re.IGNORECASE),

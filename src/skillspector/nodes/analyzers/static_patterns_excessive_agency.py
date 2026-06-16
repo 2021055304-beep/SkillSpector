@@ -36,6 +36,84 @@ from . import static_runner
 from .common import get_context, get_line_number, is_code_example
 from .pattern_defaults import PatternCategory
 
+# Indicators that the context is a legitimate capability declaration
+# rather than unrestricted tool access.
+_EXCESSIVE_AGENCY_DOC_INDICATORS: tuple[str, ...] = (
+    # Capability declaration patterns
+    "supports",
+    "provides",
+    "enables",
+    "can use",
+    "allows",
+    "allows to",
+    "capability",
+    "capabilities:",
+    "features",
+    "feature:",
+    "supported",
+    "provided",
+    "available",
+    "available tools",
+    # Automation context
+    "automated",
+    "pipeline",
+    "ci/cd",
+    "ci cd",
+    "batch",
+    "unattended",
+    "headless",
+    "non-interactive",
+    "fully automated",
+    # Documentation patterns
+    "example",
+    "for example",
+    "e.g.",
+    "such as",
+    "tutorial",
+    "guide",
+    "reference",
+    "documentation",
+    "how to",
+    "instructions",
+    "note:",
+    "warning:",
+    "```",
+)
+
+# Indicators that the context is a legitimate scope declaration.
+_SCOPE_DECLARATION_INDICATORS: tuple[str, ...] = (
+    "responsible for",
+    "in charge of",
+    "handles",
+    "manages",
+    "covers",
+    "includes",
+    "encompasses",
+    "designed to",
+    "built for",
+    "used for",
+    "intended for",
+    "purpose",
+    "objective",
+    "goal",
+    "task",
+    "tasks",
+    "scope",
+)
+
+
+
+def _is_capability_declaration(context: str) -> bool:
+    """Return True when the context is a legitimate capability declaration."""
+    ctx_lower = context.lower()
+    return any(ind in ctx_lower for ind in _EXCESSIVE_AGENCY_DOC_INDICATORS)
+
+
+def _is_scope_declaration(context: str) -> bool:
+    """Return True when the context is a legitimate scope declaration."""
+    ctx_lower = context.lower()
+    return any(ind in ctx_lower for ind in _SCOPE_DECLARATION_INDICATORS)
+
 logger = get_logger(__name__)
 
 ANALYZER_ID = "static_patterns_excessive_agency"
@@ -43,7 +121,7 @@ ANALYZER_ID = "static_patterns_excessive_agency"
 # EA1: Unrestricted Tool Access
 EA1_PATTERNS = [
     (r"(?:tools?|permissions?)\s*:\s*\[?\s*['\"]?\*['\"]?\s*\]?", 0.85),
-    (r"(?:allow|grant|enable)\s+(?:access\s+to\s+)?(?:all|any|every)\s+tools?", 0.8),
+    (r"(?:allow|grant|enable)\s+(?:access\s+to\s+)?(?:all|any|every)\s+tools?", 0.9),
     (
         r"(?:no|without)\s+(?:tool|permission|access|capability)\s+(?:restrictions?|constraints?|limitations?)",
         0.75,
@@ -58,17 +136,16 @@ EA1_PATTERNS = [
         0.75,
     ),
     (r"tools?\s*:\s*\[\s*['\"]shell['\"].*?['\"](?:file_write|network|http)['\"]", 0.7),
-    (r"(?:grant|give)\s+(?:full|complete|total)\s+(?:tool|function|api)\s+access", 0.85),
-    (r"(?:execute|run)\s+(?:arbitrary|any)\s+(?:commands?|code|scripts?)", 0.8),
+    (r"(?:grant|give)\s+(?:full|complete|total)\s+(?:tool|function|api)\s+access", 0.9),
+    (r"(?:execute|run)\s+(?:arbitrary|any)\s+(?:commands?|code|scripts?)", 0.85),
     (
         r"(?:no\s+)?(?:tool\s+)?(?:allow|block|deny)\s*(?:list|listing)\s*(?:is\s+)?(?:empty|disabled|off)",
         0.7,
-    ),
-]
+    )]
 
 # EA2: Autonomous Decision Making
 EA2_PATTERNS = [
-    (r"(?:without|no)\s+(?:asking|confirmation|approval|consent|verification|checking)", 0.75),
+    (r"(?:without|no)\s+(?:asking|confirmation|approval|consent|verification|checking)", 0.85),
     (
         r"(?:auto(?:matically)?|autonomously)\s+(?:execute|run|perform|delete|remove|modify|send|deploy)",
         0.8,
@@ -91,8 +168,7 @@ EA2_PATTERNS = [
         r"(?:if|when)\s+(?:unsure|uncertain).*?(?:proceed|continue|execute)\s+(?:anyway|regardless)",
         0.75,
     ),
-    (r"(?:--auto-?approve|--no-?confirm)\b", 0.65),
-]
+    (r"(?:--auto-?approve|--no-?confirm)\b", 0.75)]
 
 # EA3: Scope Creep
 EA3_PATTERNS = [
@@ -108,7 +184,7 @@ EA3_PATTERNS = [
         r"(?:extend|expand|broaden)\s+(?:your|the\s+)?(?:scope|functionality|capabilities|responsibilities)",
         0.75,
     ),
-    (r"(?:not\s+limited\s+to|beyond\s+(?:the\s+)?(?:scope|stated|described|documented))", 0.7),
+    (r"(?:not\s+limited\s+to|beyond\s+(?:the\s+)?(?:scope|stated|described|documented))", 0.75),
     (
         r"(?:take\s+over|assume\s+control\s+of|manage)\s+(?:all|any|every)\s+(?:aspect|part|area)",
         0.75,
@@ -124,8 +200,7 @@ EA3_PATTERNS = [
     (
         r"(?:you\s+are\s+)?(?:responsible\s+for|in\s+charge\s+of)\s+(?:everything|all\s+(?:systems?|operations?|tasks?))",
         0.7,
-    ),
-]
+    )]
 
 # EA4: Unbounded Resource Access
 EA4_PATTERNS = [
@@ -141,8 +216,8 @@ EA4_PATTERNS = [
         r"(?:no|without)\s+(?:timeout|budget|quota|cap|ceiling)\s+(?:on|for|when)\s+(?:api|tool|request|execution)",
         0.7,
     ),
-    (r"(?:loop|iterate|repeat)\s+(?:indefinitely|forever|infinitely|endlessly)", 0.75),
-    (r"(?:retry|attempt)\s+(?:indefinitely|forever|without\s+limit|unlimited\s+times)", 0.75),
+    (r"(?:loop|iterate|repeat)\s+(?:indefinitely|forever|infinitely|endlessly)", 0.8),
+    (r"(?:retry|attempt)\s+(?:indefinitely|forever|without\s+limit|unlimited\s+times)", 0.8),
     (r"max[_-]?retries?\s*=\s*(?:None|0|float\s*\(\s*['\"]inf['\"]|math\.inf|infinity)", 0.8),
     (r"timeout\s*=\s*(?:None|0|float\s*\(\s*['\"]inf['\"]|math\.inf)", 0.75),
     (
@@ -152,8 +227,7 @@ EA4_PATTERNS = [
     (
         r"(?:no|without)\s+(?:resource\s+)?(?:constraints?|limits?|quotas?|budgets?)\s+(?:on|for|when)\s+(?:api|tool|execution|request|compute)",
         0.7,
-    ),
-]
+    )]
 
 
 def analyze(content: str, file_path: str, file_type: str) -> list[AnalyzerFinding]:
@@ -171,6 +245,11 @@ def analyze(content: str, file_path: str, file_type: str) -> list[AnalyzerFindin
     for pattern, confidence in EA1_PATTERNS:
         for match in re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE):
             line_num = get_line_number(content, match.start())
+            context_text = ctx(match.start())
+            if is_code_example(context_text):
+                continue
+            if _is_capability_declaration(context_text):
+                continue
             findings.append(
                 AnalyzerFinding(
                     rule_id="EA1",
@@ -189,6 +268,8 @@ def analyze(content: str, file_path: str, file_type: str) -> list[AnalyzerFindin
             context_text = ctx(match.start())
             if is_code_example(context_text):
                 continue
+            if _is_capability_declaration(context_text):
+                continue
             findings.append(
                 AnalyzerFinding(
                     rule_id="EA2",
@@ -204,6 +285,9 @@ def analyze(content: str, file_path: str, file_type: str) -> list[AnalyzerFindin
     for pattern, confidence in EA3_PATTERNS:
         for match in re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE):
             line_num = get_line_number(content, match.start())
+            context_text = ctx(match.start())
+            if _is_scope_declaration(context_text):
+                continue
             findings.append(
                 AnalyzerFinding(
                     rule_id="EA3",

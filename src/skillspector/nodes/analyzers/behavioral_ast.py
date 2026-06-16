@@ -94,10 +94,10 @@ _RULE_CONFIDENCES: dict[str, float] = {
     "AST1": 0.85,
     "AST2": 0.85,
     "AST3": 0.75,
-    "AST4": 0.70,
+    "AST4": 0.80,
     "AST5": 0.85,
-    "AST6": 0.65,
-    "AST7": 0.50,
+    "AST6": 0.75,
+    "AST7": 0.60,
     "AST8": 0.95,
 }
 

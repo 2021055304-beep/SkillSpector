@@ -41,12 +41,11 @@ ANALYZER_ID = "static_patterns_rogue_agent"
 
 # RA1: Self-Modification — skill modifies its own code, config, or behavior
 RA1_PATTERNS = [
-    # Python: writing to own file
     (r"open\s*\(\s*__file__\s*,\s*['\"]w", 0.95),
     (r"(?:Path|pathlib)\s*\(\s*__file__\s*\)\s*\.\s*write_text", 0.95),
     (
         r"(?:write|modify|edit|update|overwrite|patch)\s+(?:this\s+)?(?:skill(?:'s)?|SKILL\.md|skill\.md)",
-        0.85,
+        0.9,
     ),
     (
         r"(?:modify|edit|change|rewrite|update|alter)\s+(?:your\s+own|its\s+own|this\s+skill(?:'s)?)\s+(?:code|source|file|script|config|configuration|instructions?|rules?)",
@@ -55,89 +54,72 @@ RA1_PATTERNS = [
     (r"(?:self[_-]?modify|self[_-]?update|self[_-]?rewrite|self[_-]?patch|self[_-]?evolve)", 0.9),
     (
         r"(?:rewrite|replace|overwrite)\s+(?:the\s+)?(?:current|existing|original)\s+(?:code|script|file|config|skill)",
-        0.85,
-    ),
-    (
-        r"(?:append|add|inject|insert)\s+(?:code|instructions?|rules?)\s+(?:to|into)\s+(?:this|the\s+current|your\s+own)\s+(?:file|skill|script)",
-        0.85,
-    ),
-    # Dynamic code generation that modifies self
-    (
-        r"(?:generate|create|write)\s+(?:new|updated|replacement)\s+(?:code|version)\s+(?:for|of)\s+(?:this|itself|the\s+skill)",
-        0.8,
-    ),
-    (r"open\s*\(\s*['\"](?:SKILL\.md|skill\.md)['\"].*?['\"]w", 0.9),
-    # Modifying own config at runtime
-    (
-        r"(?:update|modify|change|edit)\s+(?:the\s+)?(?:config|configuration|settings|parameters)\s+(?:of\s+)?(?:this|the\s+current)\s+(?:skill|agent|tool)",
-        0.75,
-    ),
-    # Disabling safety at runtime
-    (
-        r"(?:disable|remove|delete|bypass)\s+(?:the\s+)?(?:safety|security|guard|protection|constraint)\s+(?:check|rule|mechanism|feature)",
         0.9,
     ),
     (
+        r"(?:append|add|inject|insert)\s+(?:code|instructions?|rules?)\s+(?:to|into)\s+(?:this|the\s+current|your\s+own)\s+(?:file|skill|script)",
+        0.9,
+    ),
+    (
+        r"(?:generate|create|write)\s+(?:new|updated|replacement)\s+(?:code|version)\s+(?:for|of)\s+(?:this|itself|the\s+skill)",
+        0.85,
+    ),
+    (r"open\s*\(\s*['\"](?:SKILL\.md|skill\.md)['\"].*?['\"]w", 0.9),
+    (
+        r"(?:update|modify|change|edit)\s+(?:the\s+)?(?:config|configuration|settings|parameters)\s+(?:of\s+)?(?:this|the\s+current)\s+(?:skill|agent|tool)",
+        0.8,
+    ),
+    (
+        r"(?:disable|remove|delete|bypass)\s+(?:the\s+)?(?:safety|security|guard|protection|constraint)\s+(?:check|rule|mechanism|feature)",
+        0.95,
+    ),
+    (
         r"(?:comment\s+out|remove)\s+(?:the\s+)?(?:validation|verification|check|guard|assertion)",
-        0.7,
+        0.75,
     ),
 ]
 
 # RA2: Session Persistence — unauthorized persistence across boundaries
 RA2_PATTERNS = [
-    # Cron jobs and scheduled tasks
     (r"crontab\s+(?:-[el]|.*?>>?\s*/)", 0.85),
     (
         r"(?:add|create|install|register)\s+(?:a\s+)?(?:cron\s+)?(?:job|task|entry)\s+(?:for|to|that)",
-        0.8,
-    ),
-    (
-        r"(?:schedule|register)\s+(?:a\s+)?(?:recurring|periodic|repeated|daily|hourly)\s+(?:task|job|command|script)",
-        0.8,
-    ),
-    # Startup scripts and autostart
-    (
-        r"(?:add|write|append|install)\s+(?:to|into)\s+(?:~/)?\.(?:bashrc|zshrc|profile|bash_profile|login|cshrc)",
-        0.9,
-    ),
-    (
-        r"(?:add|register|install)\s+(?:as\s+)?(?:a\s+)?(?:startup|boot|autostart|login)\s+(?:script|service|daemon|task|item)",
         0.85,
     ),
     (
+        r"(?:schedule|register)\s+(?:a\s+)?(?:recurring|periodic|repeated|daily|hourly)\s+(?:task|job|command|script)",
+        0.85,
+    ),
+    (
+        r"(?:add|write|append|install)\s+(?:to|into)\s+(?:~/)?\.(?:bashrc|zshrc|profile|bash_profile|login|cshrc)",
+        0.95,
+    ),
+    (
+        r"(?:add|register|install)\s+(?:as\s+)?(?:a\s+)?(?:startup|boot|autostart|login)\s+(?:script|service|daemon|task|item)",
+        0.9,
+    ),
+    (
         r"(?:systemd|systemctl|launchd|launchctl|init\.d)\s+.*?(?:enable|install|register|create)",
-        0.8,
+        0.85,
     ),
     (
         r"(?:create|install|register|add)\s+(?:a\s+)?(?:systemd\s+)?(?:service|daemon|agent)\s+(?:file|unit)",
-        0.8,
-    ),
-    # Persistent state files
-    (
-        r"(?:save|write|persist|store|dump)\s+(?:the\s+)?(?:state|session|context|data)\s+(?:to|in)\s+(?:a\s+)?(?:file|disk|database|storage)",
-        0.6,
-    ),
-    (
-        r"(?:restore|load|read|resume)\s+(?:the\s+)?(?:previous|saved|persisted|stored)\s+(?:state|session|context|data)",
-        0.55,
+        0.85,
     ),
     (
         r"(?:persist|maintain|keep|preserve)\s+(?:state|data|context|session)\s+(?:across|between|through)\s+(?:sessions?|restarts?|reboots?|invocations?)",
-        0.75,
+        0.8,
     ),
-    # Hidden files and directories for persistence
-    (r"(?:create|write|mkdir)\s+[^|]*(?:~/|/home/|/tmp/)\.(?!git|ssh|aws)[a-z_-]+", 0.6),
-    (r"(?:create|make|write)\s+(?:a\s+)?(?:hidden|dot)\s+(?:file|directory|folder)", 0.65),
-    # Background processes
-    (r"(?:nohup|disown|setsid)\s+", 0.65),
+    (r"(?:create|write|mkdir)\s+[^|]*(?:~/|/home/|/tmp/)\.(?!git|ssh|aws)[a-z_-]+", 0.65),
+    (r"(?:create|make|write)\s+(?:a\s+)?(?:hidden|dot)\s+(?:file|directory|folder)", 0.7),
+    (r"(?:nohup|disown|setsid)\s+", 0.7),
     (
         r"(?:start|launch|spawn|fork)\s+(?:a\s+)?(?:background|daemon|detached)\s+(?:process|service|worker|task)",
-        0.7,
+        0.75,
     ),
-    (r"(?:run|execute)\s+(?:in\s+the\s+)?background\s+(?:and\s+)?(?:detach|persist|survive)", 0.75),
-    # Registry / plist for Windows/macOS persistence
-    (r"(?:HKEY_|RegOpenKey|RegSetValue|reg\s+add)\s+", 0.8),
-    (r"(?:defaults\s+write|plist|launchctl\s+load)", 0.75),
+    (r"(?:run|execute)\s+(?:in\s+the\s+)?background\s+(?:and\s+)?(?:detach|persist|survive)", 0.8),
+    (r"(?:HKEY_|RegOpenKey|RegSetValue|reg\s+add)\s+", 0.85),
+    (r"(?:defaults\s+write|plist|launchctl\s+load)", 0.8),
 ]
 
 

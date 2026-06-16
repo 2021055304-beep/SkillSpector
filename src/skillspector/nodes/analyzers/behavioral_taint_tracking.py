@@ -147,9 +147,9 @@ _RULE_SEVERITIES: dict[str, Severity] = {
 _RULE_CONFIDENCES: dict[str, float] = {
     "TT1": 0.80,
     "TT2": 0.65,
-    "TT3": 0.90,
-    "TT4": 0.80,
-    "TT5": 0.90,
+    "TT3": 0.95,
+    "TT4": 0.85,
+    "TT5": 0.95,
 }
 
 _TAG = "Data Flow"

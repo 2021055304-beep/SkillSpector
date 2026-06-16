@@ -194,29 +194,39 @@ def _format_findings_for_prompt(findings: list[Finding]) -> str:
 
 
 def _fallback_filtered(findings: list[Finding]) -> list[Finding]:
-    """Apply default remediation to all findings (pass-through with defaults)."""
-    return [
-        Finding(
-            rule_id=f.rule_id,
-            message=f.message,
-            severity=f.severity,
-            confidence=f.confidence,
-            file=f.file,
-            start_line=f.start_line,
-            end_line=f.end_line,
-            remediation=f.remediation or get_remediation(f.rule_id),
-            tags=f.tags,
-            context=f.context,
-            matched_text=f.matched_text,
-            category=getattr(f, "category", None),
-            pattern=getattr(f, "pattern", None),
-            finding=getattr(f, "finding", None),
-            explanation=getattr(f, "explanation", None),
-            code_snippet=getattr(f, "code_snippet", None) or f.context,
-            intent=None,
+    """Apply default remediation to all findings (pass-through with defaults).
+
+    Also downgrades findings with confidence < 0.6 from MEDIUM+ to LOW
+    to reduce noise from low-confidence pattern matches.
+    """
+    CONFIDENCE_THRESHOLD = 0.6
+    result: list[Finding] = []
+    for f in findings:
+        # Downgrade low-confidence findings to LOW severity
+        if f.confidence < CONFIDENCE_THRESHOLD and f.severity in ("MEDIUM", "HIGH", "CRITICAL"):
+            f = Finding(**f.__dict__, severity="LOW", confidence=min(f.confidence, 0.55))
+        result.append(
+            Finding(
+                rule_id=f.rule_id,
+                message=f.message,
+                severity=f.severity,
+                confidence=f.confidence,
+                file=f.file,
+                start_line=f.start_line,
+                end_line=f.end_line,
+                remediation=f.remediation or get_remediation(f.rule_id),
+                tags=f.tags,
+                context=f.context,
+                matched_text=f.matched_text,
+                category=getattr(f, "category", None),
+                pattern=getattr(f, "pattern", None),
+                finding=getattr(f, "finding", None),
+                explanation=getattr(f, "explanation", None),
+                code_snippet=getattr(f, "code_snippet", None) or f.context,
+                intent=None,
+            )
         )
-        for f in findings
-    ]
+    return result
 
 
 # ---------------------------------------------------------------------------

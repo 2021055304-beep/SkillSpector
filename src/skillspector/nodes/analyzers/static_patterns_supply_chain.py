@@ -48,16 +48,16 @@ ANALYZER_ID = "static_patterns_supply_chain"
 # ---------------------------------------------------------------------------
 
 SC1_PATTERNS = [
-    (r"^[a-zA-Z][a-zA-Z0-9_-]*\s*$", 0.6),
-    (r"^[a-zA-Z][a-zA-Z0-9_-]*\s*>=\s*[\d.]+\s*$", 0.5),
+    (r"^[a-zA-Z][a-zA-Z0-9_-]*\s*$", 0.8),
+    (r"^[a-zA-Z][a-zA-Z0-9_-]*\s*>=\s*[\d.]+\s*$", 0.7),
     (r"^[a-zA-Z][a-zA-Z0-9_-]*\s*==\s*\*\s*$", 0.7),
-    (r'"[^"]+"\s*:\s*"(?:\*|latest)"', 0.7),
-    (r'"[^"]+"\s*:\s*"\^[\d.]+"', 0.4),
+    (r'"[^"]+"\s*:\s*"(?:\*|latest)"', 0.75),
+    (r'"[^"]+"\s*:\s*"\^[\d.]+"', 0.7),
     (
         r"install\s+(?:the\s+)?latest\s+(?:version\s+)?(?:of\s+)?(?:all\s+)?(?:packages?|dependencies)",
-        0.6,
+        0.7,
     ),
-    (r"(?:don't|do\s+not)\s+(?:pin|lock|specify)\s+(?:package\s+)?versions?", 0.7),
+    (r"(?:don't|do\s+not)\s+(?:pin|lock|specify)\s+(?:package\s+)?versions?", 0.75),
 ]
 SC2_PATTERNS = [
     (r"curl\s+[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh", 0.9),
@@ -87,8 +87,8 @@ SC3_PATTERNS = [
     (r"eval\s*\(\s*atob\s*\(", 0.9),
     (r"new\s+Function\s*\(\s*atob\s*\(", 0.9),
     (r"_0x[a-f0-9]{4,}\s*\(", 0.8),
-    (r"['\"][A-Fa-f0-9]{200,}['\"]", 0.6),
-    (r"['\"][A-Za-z0-9+/=]{200,}['\"]", 0.5),
+    (r"['\"][A-Fa-f0-9]{500,}['\"]", 0.6),
+    (r"['\"][A-Za-z0-9+/=]{500,}['\"]", 0.5),
     (r"\(lambda\s+_:\s*exec\s*\(", 0.9),
     (r"__import__\s*\(['\"]os['\"]\s*\)\.system", 0.85),
     (r"decode\s+(?:this|the)\s+(?:base64|hex)\s+(?:and\s+)?(?:run|execute)", 0.8),
@@ -284,7 +284,22 @@ def _edit_distance(a: str, b: str) -> int:
     return prev_row[-1]
 
 
-def _is_typosquat(pkg_name: str, popular: set[str], max_distance: int = 2) -> str | None:
+def _is_prefixed_suffix_variant(pkg_name: str, popular_name: str) -> bool:
+    """Return True if the difference is only a prefix/suffix like python-, lib-, -client, -sdk."""
+    common_prefixes = ("python-", "py-", "lib-", "node-", "js-", "go-", "rust-", "c-", "cpp-")
+    common_suffixes = ("-client", "-sdk", "-api", "-tool", "-utils", "-helpers", "-binding")
+    norm_pkg = pkg_name.lower().replace("_", "-")
+    norm_pop = popular_name.lower().replace("_", "-")
+    for prefix in common_prefixes:
+        if norm_pkg.startswith(prefix) and norm_pkg[len(prefix):] == norm_pop:
+            return True
+    for suffix in common_suffixes:
+        if norm_pkg.endswith(suffix) and norm_pkg[:-len(suffix)] == norm_pop:
+            return True
+    return False
+
+
+def _is_typosquat(pkg_name: str, popular: set[str], max_distance: int = 3) -> str | None:
     """Return the popular package name if pkg_name is a close-but-not-exact match."""
     normalized = pkg_name.lower().replace("_", "-")
     for popular_name in popular:
@@ -293,8 +308,17 @@ def _is_typosquat(pkg_name: str, popular: set[str], max_distance: int = 2) -> st
             return None
         if len(normalized) < 3 or len(pop_norm) < 3:
             continue
+        # Skip if the difference is only a prefix/suffix variant
+        if _is_prefixed_suffix_variant(normalized, pop_norm):
+            continue
         dist = _edit_distance(normalized, pop_norm)
         if 0 < dist <= max_distance:
+            # Additional check: ensure the strings share enough common characters
+            # to avoid flagging legitimately different packages
+            common_chars = sum(1 for c in set(normalized) if c in set(pop_norm))
+            min_len = min(len(normalized), len(pop_norm))
+            if min_len > 0 and common_chars / min_len < 0.5:
+                continue
             return popular_name
     return None
 
